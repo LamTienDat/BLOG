@@ -5,15 +5,6 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { jwtSecret } from '../utils/jwtUtil';
 
-const revokedTokens: string[] = [];
-
-export const addToBlacklist = (token: string) => {
-    revokedTokens.push(token);
-};
-
-export const isTokenRevoked = (token: string) => {
-    return revokedTokens.includes(token);
-};
 
 export const login = async (req: Request, res: Response) => {
     const { username, password } = req.body;
@@ -44,19 +35,7 @@ export const login = async (req: Request, res: Response) => {
 };
 
 export const logout = async (req: Request, res: Response) => {
-    const token = req.headers.authorization?.split(' ')[1];
-
-    if (!token) {
-        return res.status(401).json({ message: 'Unauthorized' });
-    }
-
-    // Check if the token is revoked
-    if (isTokenRevoked(token)) {
-        return res.status(401).json({ message: 'Token has been revoked' });
-    }
-
-    // Add the token to the blacklist
-    addToBlacklist(token);
+    // Do something to kill the token 
 
     // Respond with a success message
     res.json({ message: 'Logout successful' });
