@@ -15,14 +15,16 @@ Typescript, NodeJS, ExpressJS, MongoDB
 4. Cấu trúc cơ sở dữ liệu:
 
 Blogs {
-    title: string;
-    content: string;
-    createdAt:  Date;
-    updatedAt:  Date;
-    state: number ;
-    like: number ;
-    dislike : number;
-    author: string | Schema.Types.ObjectId;
+   title: string;
+  content: string;
+  createdAt: Date;
+  updatedAt: Date;
+  state: number;
+  like: number;
+  dislike: number;
+  author: string | Schema.Types.ObjectId;
+  likesInfo: mongoose.Types.ObjectId[];
+  dislikesInfo: mongoose.Types.ObjectId[];
 }
 
 Users {
@@ -40,6 +42,8 @@ Users {
     address: string;
     createdAt: Date;
     updatedAt: Date;
+    likedPosts: mongoose.Types.ObjectId[]; 
+    dislikedPosts: mongoose.Types.ObjectId[];
 }
 
 5. Cấu hình:
