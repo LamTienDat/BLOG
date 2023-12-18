@@ -1,2 +1,2 @@
 1. npm install
-2. npx ts-node src/app.ts
+2. run with dev environment :  npm run dev
