@@ -13,7 +13,8 @@ Typescript, NodeJS, ExpressJS, MongoDB
 3. Cấu trúc thư mục:
 
 4. Cấu trúc cơ sở dữ liệu:
- {
+
+Blogs {
     title: string;
     content: string;
     createdAt:  Date;
