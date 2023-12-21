@@ -14,8 +14,8 @@ Typescript, NodeJS, ExpressJS, MongoDB
 
 4. Cấu trúc cơ sở dữ liệu:
 
-Blogs {
-   title: string;
+Blog {
+  title: string;
   content: string;
   createdAt: Date;
   updatedAt: Date;
@@ -29,21 +29,26 @@ Blogs {
 
 Users {
     username: string;
-    password: string;
-    role: string;
-    profileImage: {
-        data: Buffer;
-        contentType: string;
-    };
-    firstName: string;
-    lastName: string;
-    email: string;
-    birthDate: number; 
-    address: string;
-    createdAt: Date;
-    updatedAt: Date;
-    likedPosts: mongoose.Types.ObjectId[]; 
-    dislikedPosts: mongoose.Types.ObjectId[];
+  password: string;
+  role: string;
+  profileImage: {
+    data: Buffer;
+  };
+  firstName: string;
+  lastName: string;
+  email: string;
+  birthDate: number;
+  address: string;
+  createdAt: Date;
+  updatedAt: Date;
+  isVerified: boolean;
+  likedPosts: mongoose.Types.ObjectId[];
+  dislikedPosts: mongoose.Types.ObjectId[];
+}
+
+verifiedCode{
+  userId: string | Schema.Types.ObjectId;
+  code: string;
 }
 
 5. Cấu hình:
@@ -52,3 +57,4 @@ Users {
 6. Sử dụng và Tính năng:
   Tạo tài khoản.
   Đăng bài, like, dislike, thao tác cơ bản với bài đăng.
+  Xác nhận tài khoản thông qua email
