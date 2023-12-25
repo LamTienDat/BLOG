@@ -6,6 +6,7 @@ import Blog from "../models/Blog";
 import mimeTypes from "mime-types";
 import { RequestCustom } from "../../types/express";
 import Jimp from "jimp";
+import cron from "node-cron";
 import { myCache } from "../app";
 
 export const adminCreateUser = async (req: RequestCustom, res: Response) => {
@@ -43,7 +44,7 @@ export const adminCreateUser = async (req: RequestCustom, res: Response) => {
     const compressedImageBuffer = await (
       await Jimp.read(file.buffer)
     )
-      .resize(300, Jimp.AUTO) // Resize width to 100px, maintain aspect ratio
+      .resize(300, Jimp.AUTO) // Resize width to 300px, maintain aspect ratio
       .quality(80) // Set the compression quality (adjust as needed)
       .getBufferAsync(Jimp.MIME_JPEG);
     const image = {
@@ -100,18 +101,63 @@ export const adminCreateUser = async (req: RequestCustom, res: Response) => {
   }
 };
 
-// Get all users
+export const updateAllUsersCache = async () => {
+  try {
+    const allUsers = await User.find();
+    myCache.set("users", allUsers);
+    console.log('Cache "allUsers" updated successfully.');
+  } catch (error) {
+    console.error("Error updating cache:", error);
+  }
+};
+
+export const cacheUsers = async (req: RequestCustom, res: Response) => {
+  try {
+    const allUsers = await User.find();
+    myCache.set("users", allUsers);
+    return res.json({ message: "Cache sucessfully" });
+  } catch (error) {
+    console.error("Error updating cache:", error);
+  }
+};
+
 export const getAllUsers = async (req: RequestCustom, res: Response) => {
   try {
-    if (myCache.has("users")) {
-      return res.send({ data: myCache.get("users") });
+    const page = req.query.page;
+    if (!page) return res.json("Please input page");
+
+    const pageSize = 5;
+    const pageString: string = page as string;
+
+    const totalUsers = await User.countDocuments();
+    myCache.set("totalUsers", totalUsers);
+
+    const totalPages = Math.ceil(totalUsers / pageSize);
+
+    if (parseInt(pageString) > totalPages) {
+      return res.json({ message: "Page cannot be greater than total page" });
     }
-    const users = await User.find({}, "-password, -profileImage");
-    myCache.set("users", users);
-    res.json(users);
+
+    const skip = (parseInt(pageString) - 1) * pageSize;
+
+    let allUsers = myCache.get("users");
+
+    if (allUsers == null) {
+      console.log("Cache miss, querying the database...");
+      allUsers = await User.find()
+        .sort("_id")
+        .skip(Math.max(0, skip))
+        .limit(pageSize);
+    } else {
+      allUsers = allUsers
+        .sort((a: any, b: any) => a._id - b._id)
+        .slice(Math.max(0, skip), Math.max(0, skip) + pageSize);
+      console.log("Data from cache...");
+    }
+    return res.json(allUsers);
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -218,3 +264,8 @@ export const getTest = async (req: RequestCustom, res: Response) => {
     res.status(500).json({ message: "Internal Server Error" });
   }
 };
+
+cron.schedule("*/10 * * * *", async () => {
+  console.log("Running task every 10 minutes...");
+  await updateAllUsersCache();
+});

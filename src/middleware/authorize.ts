@@ -7,11 +7,11 @@ export const authorize = (allowedRoles: string[]) => {
     const user = req.user;
 
     if (!user) {
-      return res.status(401).json({ error: "Invalid role 1" });
+      return res.status(401).json({ error: "Invalid role" });
     }
 
     if (!allowedRoles.includes(user.user.role)) {
-      return res.status(403).json({ error: "Invalid role 2" });
+      return res.status(403).json({ error: "Invalid role" });
     }
 
     next();

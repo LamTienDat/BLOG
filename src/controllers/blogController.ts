@@ -22,11 +22,6 @@ export const createBlog = async (req: RequestCustom, res: Response) => {
         .status(401)
         .json({ message: "Unauthorized - User not logged in" });
     }
-    if (user.isVerified !== "true") {
-      return res
-        .status(401)
-        .json({ message: "Your account need to be verify" });
-    }
     const newBlog = new Blog({ title, content, author: user._id });
     await newBlog.save();
     updateAllBlogsCache();
@@ -48,60 +43,6 @@ export const updateAllBlogsCache = async () => {
   }
 };
 
-cron.schedule("*/10 * * * *", async () => {
-  console.log("Running task every 10 minutes...");
-  await updateAllBlogsCache();
-});
-
-// Get all blogs
-// export const getAllBlogs = async (req: RequestCustom, res: Response) => {
-//   try {
-//     let page = req.query.page;
-//     if (!page) {
-//       return res.json("Please input page");
-//     }
-//     const blogTilte = req.body.title;
-//     const pageSize = 5;
-//     const pageString: string = page as string;
-//     const totalBlogs = await Blog.countDocuments();
-//     const totalPages = Math.ceil(totalBlogs / pageSize);
-//     if (parseInt(pageString) > totalPages) {
-//       return res.json({ message: "Page can not be greater than total page" });
-//     }
-//     const skip = (parseInt(pageString) - 1) * pageSize;
-
-//     if (!blogTilte) {
-//       if (req.user.user.role == "admin") {
-//         const blogs = await Blog.find()
-//           .sort("_id")
-//           .skip(Math.max(0, totalBlogs - parseInt(pageString) * pageSize))
-//           .limit(Math.min(pageSize, totalBlogs - skip));
-//         return res.json(blogs);
-//       }
-//       const blogs = await Blog.find({ state: 1 })
-//         .sort("_id")
-//         .skip(Math.max(0, totalBlogs - parseInt(pageString) * pageSize))
-//         .limit(Math.min(pageSize, totalBlogs - skip));
-//       return res.json(blogs);
-//     }
-//     const regex = new RegExp(blogTilte, "i");
-//     let blogs;
-//     if (req.user.user.role == "user") {
-//       blogs = await Blog.find({ state: 1, title: regex })
-//         .sort("_id")
-//         .skip(Math.max(0, totalBlogs - parseInt(pageString) * pageSize))
-//         .limit(Math.min(pageSize, totalBlogs - skip));
-//     }
-//     blogs = await Blog.find({ title: regex })
-//       .sort("_id")
-//       .skip(Math.max(0, totalBlogs - parseInt(pageString) * pageSize))
-//       .limit(Math.min(pageSize, totalBlogs - skip));
-//     return res.json(blogs);
-//   } catch (error) {
-//     console.error(error);
-//     return res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };
 export const getAllBlogs = async (req: RequestCustom, res: Response) => {
   try {
     const page = req.query.page;
@@ -121,12 +62,6 @@ export const getAllBlogs = async (req: RequestCustom, res: Response) => {
     }
 
     const skip = (parseInt(pageString) - 1) * pageSize;
-
-    if (req.user.user.isVerified !== "true") {
-      return res
-        .status(401)
-        .json({ message: "Your account need to be verify" });
-    }
 
     let query: any = {};
     if (blogTitle) {
@@ -152,7 +87,7 @@ export const getAllBlogs = async (req: RequestCustom, res: Response) => {
         .filter((blog: any) => blog.title.match(new RegExp(blogTitle, "i")))
         .sort((a: any, b: any) => a._id - b._id)
         .slice(Math.max(0, skip), Math.max(0, skip) + pageSize);
-      console.log("Data form cache");
+      console.log("Data from cache...");
     }
     return res.json(allBlogs);
   } catch (error) {
@@ -464,12 +399,6 @@ export const updateBlogCount = async () => {
   }
 };
 
-//Count so blog duoc tao ra trong ngay vao luc 0h00
-cron.schedule("*/10 * * * *", async () => {
-  console.log("Running task every 10 minutes...");
-  await updateBlogCount();
-});
-
 export const blogsCache = async (req: RequestCustom, res: Response) => {
   try {
     const allBlogs = await Blog.find();
@@ -479,3 +408,14 @@ export const blogsCache = async (req: RequestCustom, res: Response) => {
     console.error("Error updating cache:", error);
   }
 };
+
+cron.schedule("*/10 * * * *", async () => {
+  console.log("Running task every 10 minutes...");
+  await updateAllBlogsCache();
+});
+
+//Count so blog duoc tao ra trong ngay vao luc 0h00
+cron.schedule("*/10 * * * *", async () => {
+  console.log("Running task every 10 minutes...");
+  await updateBlogCount();
+});

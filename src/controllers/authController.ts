@@ -100,7 +100,7 @@ export const createUser = async (req: Request, res: Response) => {
     if (existingUser) {
       return res.status(400).json({ message: "Username already exists" });
     }
-    const verificationCode = crypto.randomBytes(20).toString("hex");
+    const verificationCode = crypto.randomBytes(10).toString("hex");
 
     // Hash the password before saving to the database
     const hashedPassword = await bcrypt.hash(password.trim(), 5);
