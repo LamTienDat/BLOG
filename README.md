@@ -58,3 +58,4 @@ verifiedCode{
   Tạo tài khoản.
   Đăng bài, like, dislike, thao tác cơ bản với bài đăng.
   Xác nhận tài khoản thông qua email
+  Tính năng lập lịch
