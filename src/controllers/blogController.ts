@@ -48,7 +48,7 @@ export const getAllBlogs = async (req: RequestCustom, res: Response) => {
     const page = req.query.page;
     if (!page) return res.json("Please input page");
 
-    const blogTitle = req.body.title;
+    const blogTitle = req.query.title;
     const pageSize = 5;
     const pageString: string = page as string;
 
@@ -64,7 +64,7 @@ export const getAllBlogs = async (req: RequestCustom, res: Response) => {
     const skip = (parseInt(pageString) - 1) * pageSize;
 
     let query: any = {};
-    if (blogTitle) {
+    if (blogTitle && typeof blogTitle === "string") {
       const regex = new RegExp(blogTitle, "i");
       query =
         req.user.user.role === "user"
@@ -84,7 +84,11 @@ export const getAllBlogs = async (req: RequestCustom, res: Response) => {
         .limit(pageSize);
     } else {
       allBlogs = allBlogs
-        .filter((blog: any) => blog.title.match(new RegExp(blogTitle, "i")))
+        .filter(
+          (blog: any) =>
+            typeof blogTitle === "string" &&
+            blog.title.match(new RegExp(blogTitle, "i"))
+        )
         .sort((a: any, b: any) => a._id - b._id)
         .slice(Math.max(0, skip), Math.max(0, skip) + pageSize);
       console.log("Data from cache...");
@@ -103,25 +107,48 @@ export const getBlogById = async (req: RequestCustom, res: Response) => {
     if (!blogId) {
       return res.status(404).json({ message: "BlogId is required" });
     }
-    if (req.user.user.isVerified !== "true") {
-      return res
-        .status(401)
-        .json({ message: "Your account need to be verify" });
+
+    // Kiểm tra xem allBlogs có trong cache không
+    const allBlogs = myCache.get("allBlogs");
+
+    if (allBlogs) {
+      // Tìm bản ghi có _id bằng blogId trong allBlogs
+      const blog = allBlogs.find((b: any) => b._id.toString() === blogId);
+
+      if (!blog) {
+        return res.status(404).json({ message: "Blog not found" });
+      }
+      console.log("Data from cache...");
+      if (req.user.user.role === "admin") {
+        return res.json(blog);
+      }
+      if (blog.state !== "1") {
+        return res.status(404).json({ message: "Blog not found" });
+      }
     }
-    if (req.user.user.role == "admin") {
+
+    // Nếu không có trong cache, thực hiện truy vấn cơ sở dữ liệu
+    if (req.user.user.role === "admin") {
       const blog = await Blog.findById(blogId);
 
       if (!blog) {
         return res.status(404).json({ message: "Blog not found" });
       }
-      res.json(blog);
+      console.log("Data from DB...");
+      const all = await Blog.find();
+      myCache.set("allBlogs", all);
+      return res.json(blog);
     }
-    const blog = await Blog.find({ _id: blogId, state: 1 });
+
+    const blog = await Blog.findOne({ _id: blogId, state: 1 });
+    const all = await Blog.find();
 
     if (!blog) {
       return res.status(404).json({ message: "Blog not found" });
     }
-    res.json(blog);
+    console.log("Data from DB...");
+    myCache.set("allBlogs", all);
+    return res.json(blog);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Internal Server Error" });
@@ -172,12 +199,6 @@ export const deleteBlog = async (req: RequestCustom, res: Response) => {
   try {
     const blogId = req.params.id;
     const author = req.user.user._id;
-    const { title, content } = req.body;
-    if (title === "" || content === "") {
-      return res
-        .status(404)
-        .json({ message: "Title and content are required" });
-    }
     if (!blogId) {
       return res.status(404).json({ message: "BlogId is required" });
     }
@@ -189,6 +210,8 @@ export const deleteBlog = async (req: RequestCustom, res: Response) => {
     }
     if (req.user.user.role == "admin" || author == blog.author) {
       await blog.deleteOne();
+      const allBlogs = await Blog.find();
+      myCache.set("allBlogs", allBlogs);
       return res.json({ message: "Blog deleted successfully" });
     }
     return res.json({
@@ -308,12 +331,18 @@ export const dislikeBlog = async (req: RequestCustom, res: Response) => {
 export const exportCsv = async (req: RequestCustom, res: Response) => {
   try {
     let data;
+    if (myCache.has("allBlogs")) {
+      data = myCache.get("allBlogs");
+    }
 
     const role = req.user.user.role;
     if (role === "admin") {
       data = await Blog.find();
+      myCache.set("allBlogs", data);
     } else {
       data = await Blog.find({ state: 1 });
+      const all = await Blog.find();
+      myCache.set("allBlogs", all);
     }
 
     const csvStream = fastCsv.format({ headers: true });
@@ -339,6 +368,10 @@ export const importCsv = async (req: RequestCustom, res: Response) => {
   try {
     if (!req.file) {
       return res.status(400).send("No file uploaded.");
+    }
+
+    if (req.file.mimetype !== "text/csv") {
+      return res.status(400).send("Only CSV files are allowed.");
     }
 
     const existingUsers = await User.find({}, "_id");
@@ -371,11 +404,12 @@ export const importCsv = async (req: RequestCustom, res: Response) => {
           : [],
         __v: parseInt(item.__v),
       }));
-    console.log(enrichedData);
 
     // Import data into the MongoDB collection
     const result = await Blog.insertMany(enrichedData);
-    res.status(200).json({ message: "CSV data imported successfully", result });
+    const allBlogs = await Blog.find();
+    myCache.set("allBlogs", allBlogs);
+    res.status(200).json({ message: "CSV data imported successfully" });
   } catch (error) {
     console.error(error);
     res.status(500).send("Internal Server Error");

@@ -8,6 +8,7 @@ import { RequestCustom } from "../../types/express";
 import Jimp from "jimp";
 import cron from "node-cron";
 import { myCache } from "../app";
+import validator from "validator";
 
 export const adminCreateUser = async (req: RequestCustom, res: Response) => {
   const {
@@ -22,6 +23,20 @@ export const adminCreateUser = async (req: RequestCustom, res: Response) => {
   } = req.body;
   const user = req.user;
 
+  const parsed = parseFloat(birthDate);
+  if (
+    !Number.isNaN(parsed) &&
+    Number.isFinite(parsed) &&
+    /^\d+\.?\d+$/.test(birthDate) != true
+  ) {
+    return res.status(400).json({
+      message: "Bithdate must be timestamp",
+    });
+  }
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
   const file = req.file;
   if (!file) {
     return res.json("Invalid file");
@@ -33,6 +48,9 @@ export const adminCreateUser = async (req: RequestCustom, res: Response) => {
     return res
       .status(400)
       .json("Invalid file format. Only jpg, jpeg, and png are allowed.");
+  }
+  if (role !== "user" || role !== "admin") {
+    return res.status(400).json("Only have 2 role are user and admin");
   }
 
   try {
@@ -182,46 +200,87 @@ export const getUserById = async (req: Request, res: Response) => {
 export const updateUser = async (req: RequestCustom, res: Response) => {
   const userId = req.params.id;
   const data = req.body;
+  const file = req.file;
+
+  if (file) {
+    const allowedExtensions = ["jpg", "jpeg", "png"];
+    const fileExtension = mimeTypes.extension(file.mimetype);
+
+    if (!fileExtension || !allowedExtensions.includes(fileExtension)) {
+      return res
+        .status(400)
+        .json("Invalid file format. Only jpg, jpeg, and png are allowed.");
+    }
+  }
+
   try {
+    // Validate birthDate
+    const parsedBirthDate = parseFloat(data.birthDate);
+    if (Number.isNaN(parsedBirthDate) || !Number.isFinite(parsedBirthDate)) {
+      return res.status(400).json({
+        message: "Birthdate must be a valid timestamp.",
+      });
+    }
+
+    // Validate email
+    if (!validator.isEmail(data.email)) {
+      return res.status(400).json({ message: "Invalid email format" });
+    }
+
     // Check if the user exists
     const user = await User.findById(userId);
     const currentTimeStamp: number = Date.now();
     const currentDate: Date = new Date(currentTimeStamp);
+
     if (!user) {
       return res.status(404).json({ message: "User not found" });
     }
 
-    const compressedImageBuffer = await (
-      await Jimp.read(data.profileImage)
-    )
-      .resize(300, Jimp.AUTO) // Resize width to 100px, maintain aspect ratio
-      .quality(80) // Set the compression quality (adjust as needed)
-      .getBufferAsync(Jimp.MIME_JPEG);
+    // Process profileImage
+    let profileImageBuffer;
+    if (file) {
+      const jimpImage: Jimp = await Jimp.read(file.buffer);
+      profileImageBuffer = await jimpImage
+        .resize(300, Jimp.AUTO)
+        .quality(80)
+        .getBufferAsync(Jimp.MIME_JPEG);
+    } else {
+      profileImageBuffer = user.profileImage.data;
+    }
 
     // Update user data
     user.username = data.username;
-    user.profileImage = data.profileImage;
     user.firstName = data.firstName;
     user.lastName = data.lastName;
     user.email = data.email;
     user.birthDate = data.birthDate;
     user.address = data.address;
-    user.password = await bcrypt.hash(data.password, 10);
     user.updatedAt = currentDate;
-    if (data.profileImage) {
+
+    if (data.password) {
+      user.password = await bcrypt.hash(data.password, 10);
+    }
+
+    if (profileImageBuffer) {
       user.profileImage = {
-        data: compressedImageBuffer,
+        data: profileImageBuffer,
       };
     }
-    if (req.user.user.role == "admin" || req.user.user._id == userId) {
+
+    // Check user role and permissions
+    if (req.user.user.role === "admin" || req.user.user._id === userId) {
       await user.save();
+      const all = await User.find();
+      myCache.set("users", all);
+      return res.json({ message: "User updated successfully" });
     } else {
-      res.json({ message: "You cant edit with your access !!" });
+      return res
+        .status(403)
+        .json({ message: "You don't have permission to edit this user" });
     }
-    res.json({ message: "User updated successfully" });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: "Internal Server Error" });
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 };
 
@@ -241,6 +300,8 @@ export const deleteUser = async (req: RequestCustom, res: Response) => {
     if (req.user.user.role == "admin" || req.user.user._id == userId) {
       await user.deleteOne();
       await Blog.deleteMany({ user: user._id });
+      const allUser = await User.find();
+      myCache.set("users", allUser);
     } else {
       res.json({ message: "You cant edit with your access !!" });
     }

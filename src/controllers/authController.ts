@@ -9,6 +9,7 @@ import Jimp from "jimp";
 import mimeTypes from "mime-types";
 import * as crypto from "crypto";
 const nodemailer = require("nodemailer");
+import validator from "validator";
 
 export const login = async (req: Request, res: Response) => {
   const { username, password } = req.body;
@@ -58,6 +59,35 @@ export const createUser = async (req: Request, res: Response) => {
   const { username, password, firstName, lastName, email, birthDate, address } =
     req.body;
   //   const { username, password } = req.body;
+
+  // Check if both username and password are provided
+  if (
+    !username ||
+    !password ||
+    !firstName ||
+    !lastName ||
+    !email ||
+    !birthDate
+  ) {
+    return res.status(400).json({
+      message:
+        "Username, password, FirstName, LastName, Email, Bithdate are required",
+    });
+  }
+  const parsed = parseFloat(birthDate);
+  if (
+    !Number.isNaN(parsed) &&
+    Number.isFinite(parsed) &&
+    /^\d+\.?\d+$/.test(birthDate) != true
+  ) {
+    return res.status(400).json({
+      message: "Bithdate must be timestamp",
+    });
+  }
+  if (!validator.isEmail(email)) {
+    return res.status(400).json({ message: "Invalid email format" });
+  }
+
   const file = req.file;
   if (!file) {
     return res.json("Invalid file");
@@ -72,21 +102,6 @@ export const createUser = async (req: Request, res: Response) => {
       .json("Invalid file format. Only jpg, jpeg, and png are allowed.");
   }
   try {
-    // Check if both username and password are provided
-    if (
-      !username ||
-      !password ||
-      !firstName ||
-      !lastName ||
-      !email ||
-      !birthDate
-    ) {
-      return res.status(400).json({
-        message:
-          "Username, password, FirstName, LastName, Email, Bithdate are required",
-      });
-    }
-
     const compressedImageBuffer = await (await Jimp.read(file.buffer))
       .resize(300, Jimp.AUTO)
       .quality(80)
@@ -140,11 +155,14 @@ export const createUser = async (req: Request, res: Response) => {
 
 export const verifyAccount = async (req: Request, res: Response) => {
   if (!req.body.userId || !req.body.code) {
-    return res.json({ message: "Please fill userId and code !!!" });
+    return res.status(400).json({ message: "Please fill userId and code !!!" });
   }
-
+  if (req.body.userId.length != 24) {
+    return res.status(405).json("Invalid userId");
+  }
   var ObjectId = require("mongodb").ObjectId;
   const userId = new ObjectId(req.body.userId);
+
   const code = req.body.code;
   const record = await verifiedCode.findOne({ code: code });
 
@@ -155,10 +173,12 @@ export const verifyAccount = async (req: Request, res: Response) => {
       await user.save();
       return res.json("Account verified !");
     }
-    return res.json("Invalid user");
+    return res.status(404).json("Invalid user");
   }
 
-  return res.json("Your code is expired, please create account again : )");
+  return res
+    .status(405)
+    .json("Your code is expired, please create account again : )");
 };
 
 // Function to send a welcome email
