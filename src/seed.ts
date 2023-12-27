@@ -23,7 +23,6 @@ const user = [
     dislikedPosts: [],
   },
   {
-    _id: "658b9c9f6c98f3af1198d73a",
     username: "user",
     password: "$2b$10$iwikNNptHK2oRVT2Y.hzqel9StQAXC5r.FsqPGcJf01btLcnTaaLm",
     role: "user",
