@@ -7,6 +7,8 @@ Quản lí đăng bài, quản lí lượt like, dislike, quản lí user.
   * npm install
   * Chạy chương trình: npx ts-node src/app.ts
   * Chạy chương trình môi trường development: npm run dev
+  * Lúc này chưa có dữ liệu, chạy : npx ts-node src/seed.ts để lấy dữ liệu test
+  * Truy cập http://localhost:3000/api-docs/ để test API
 - Yêu cầu hệ thống:
 Typescript, NodeJS, ExpressJS, MongoDB
 
