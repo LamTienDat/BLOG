@@ -49,9 +49,6 @@ export const adminCreateUser = async (req: RequestCustom, res: Response) => {
       .status(400)
       .json("Invalid file format. Only jpg, jpeg, and png are allowed.");
   }
-  if (role !== "user" || role !== "admin") {
-    return res.status(400).json("Only have 2 role are user and admin");
-  }
 
   try {
     if (!file) {

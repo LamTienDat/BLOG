@@ -32,8 +32,8 @@ const userSchema = new mongoose.Schema({
   birthDate: { type: Number, required: true },
   address: { type: String },
   createdAt: { type: Date, required: true, default: Date.now() },
-  updatedAt: { type: Date, require: true, default: Date.now() },
-  isVerified: { type: Boolean, require: true },
+  updatedAt: { type: Date, required: true, default: Date.now() },
+  isVerified: { type: Boolean, required: true },
   likedPosts: [{ type: mongoose.Types.ObjectId, ref: "Blog" }],
   dislikedPosts: [{ type: mongoose.Types.ObjectId, ref: "Blog" }],
 });

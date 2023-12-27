@@ -70,7 +70,7 @@ export const getAllBlogs = async (req: RequestCustom, res: Response) => {
         req.user.user.role === "user"
           ? { state: 1, title: regex }
           : { title: regex };
-    } else {
+    } else if (!blogTitle && typeof blogTitle === "string") {
       query = req.user.user.role === "admin" ? {} : { state: 1 };
     }
 
