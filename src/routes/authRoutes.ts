@@ -1,7 +1,10 @@
 // authRoutes.ts
 import express from "express";
-import { login, logout, verifyAccount } from "../controllers/authController";
-import { createUser } from "../controllers/authController";
+import {
+  createUser,
+  login,
+  verifyAccount,
+} from "../controllers/authController";
 import { authorize } from "../middleware/authorize";
 import { upload } from "../middleware/uploadMiddleware";
 
@@ -34,7 +37,6 @@ const router = express.Router();
  */
 router.post("/login", login);
 
-router.post("/logout", logout);
 /**
  * @swagger
  * /auth:
