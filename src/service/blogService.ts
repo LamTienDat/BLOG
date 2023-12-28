@@ -59,7 +59,7 @@ export const getAllBlogsService = async (req: RequestCustom, res: Response) => {
     } else if (!blogTitle && typeof blogTitle === "string") {
       query = req.user.user.role === "admin" ? {} : { state: 1 };
     }
-
+    // Check blogs in Cache
     let allBlogs = myCache.get("allBlogs");
 
     if (allBlogs == null) {
@@ -93,11 +93,10 @@ export const getBlogByIdService = async (req: RequestCustom, res: Response) => {
       return res.status(404).json({ message: "BlogId is required" });
     }
 
-    // Kiểm tra xem allBlogs có trong cache không
+    // check blogs in cache
     const allBlogs = myCache.get("allBlogs");
 
     if (allBlogs) {
-      // Tìm bản ghi có _id bằng blogId trong allBlogs
       const blog = allBlogs.find((b: any) => b._id.toString() === blogId);
 
       if (!blog) {
@@ -112,7 +111,7 @@ export const getBlogByIdService = async (req: RequestCustom, res: Response) => {
       }
     }
 
-    // Nếu không có trong cache, thực hiện truy vấn cơ sở dữ liệu
+    // not in cache, query DB
     if (req.user.user.role === "admin") {
       const blog = await Blog.findById(blogId);
 
@@ -237,6 +236,7 @@ export const likeBlogService = async (req: RequestCustom, res: Response) => {
     const hasLiked = userRecord.likedPosts.findIndex((postId) =>
       postId.equals(blog._id)
     );
+    //logic like and unlike
     if (hasLiked == -1) {
       userRecord.likedPosts.push(blog._id);
       blog.likesInfo.push(userRecord._id);
@@ -284,6 +284,7 @@ export const dislikeBlogService = async (req: RequestCustom, res: Response) => {
     const hasDisliked = userRecord.dislikedPosts.findIndex((postId) =>
       postId.equals(blog._id)
     );
+    //logic dislike and un dislike
     if (hasDisliked == -1) {
       userRecord.dislikedPosts.push(blog._id);
       blog.dislikesInfo.push(userRecord._id);
@@ -327,7 +328,7 @@ export const exportCsvService = async (req: RequestCustom, res: Response) => {
       const all = await Blog.find();
       myCache.set("allBlogs", all);
     }
-
+    // write data on stream
     const csvStream = fastCsv.format({ headers: true });
     const writableStream = fs.createWriteStream("output.csv");
     csvStream.pipe(writableStream);

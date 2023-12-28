@@ -5,7 +5,6 @@ import Blog from "../models/Blog";
 import mimeTypes from "mime-types";
 import { RequestCustom } from "../../types/express";
 import Jimp from "jimp";
-import cron from "node-cron";
 import { myCache } from "../app";
 import validator from "validator";
 
@@ -23,7 +22,6 @@ export const adminCreateUserService = async (
     address,
     role,
   } = req.body;
-  const user = req.user;
 
   const parsed = parseFloat(birthDate);
   if (
@@ -56,7 +54,6 @@ export const adminCreateUserService = async (
     if (!file) {
       return res.json("Invalid file");
     }
-    // Sử dụng sharp để thực hiện nén ảnh
     // Resize and compress the image using jimp
     const compressedImageBuffer = await (
       await Jimp.read(file.buffer)

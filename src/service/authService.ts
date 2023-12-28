@@ -152,14 +152,10 @@ export const createUserService = async (req: Request, res: Response) => {
 };
 // Function to send a welcome email
 const sendWelcomeEmail = async (userEmail: any, verificationCode: any) => {
-  // Tạo URL xác nhận từ mã xác nhận
-  // Nội dung email
   const emailContent = `
     <p>Thank you for registering with YourApp. Please confirm your verification code</p>
     <p> Your code is <strong>${verificationCode}</strong></a>
   `;
-
-  // Thông tin email
   const transporter = nodemailer.createTransport({
     service: "gmail",
     auth: {
@@ -185,6 +181,7 @@ const sendWelcomeEmail = async (userEmail: any, verificationCode: any) => {
   }
 };
 
+// Verify by code and userID
 export const verifyAccountService = async (req: Request, res: Response) => {
   try {
     if (!req.body.userId || !req.body.code) {
