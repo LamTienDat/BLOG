@@ -27,9 +27,7 @@ app.use(bodyParser.json());
 // Import Swagger UI Express
 import swaggerUi from "swagger-ui-express";
 import specs from "./swaggerConfig";
-
-// Add Swagger Middleware
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
+import configRoutes from "./routes/configRoutes";
 
 // Connect to MongoDB
 mongoose.connect(mongoURI, {
@@ -38,7 +36,6 @@ mongoose.connect(mongoURI, {
 } as ConnectOptions);
 
 const NodeCache = require("node-cache");
-// export const myCache = new NodeCache();
 export const CACHE_TTL = 600;
 export const myCache = new NodeCache({
   stdTTL: CACHE_TTL,
@@ -49,6 +46,8 @@ app.use("/auth", authRoutes);
 app.use("/user", authenticate, userRoutes);
 app.use("/blog", authenticate, blogRoutes);
 app.use("/cache", authenticate, cacheRoutes);
+app.use("/config", authenticate, configRoutes);
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(specs));
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);

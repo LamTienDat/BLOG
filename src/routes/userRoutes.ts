@@ -4,11 +4,11 @@ import {
   getUserById,
   updateUser,
   deleteUser,
-  getTest,
 } from "../controllers/userController";
 import { authorize } from "../middleware/authorize";
 import { upload } from "../middleware/uploadMiddleware";
 import { adminCreateUser } from "../controllers/userController";
+import { postConfig } from "../controllers/configController";
 
 const router = express.Router();
 
@@ -25,9 +25,16 @@ const router = express.Router();
  *     parameters:
  *       - in: query
  *         name: page
- *         type: string
  *         required: true
  *         description: The page number for pagination.
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: pageSize
+ *         required: true
+ *         description: The pageSize for pagination.
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
  *         description: Successful response with a list of users.
@@ -321,7 +328,5 @@ router.post(
   upload.single("avatar"),
   adminCreateUser
 );
-
-router.get("/redis", getTest);
 
 export default router;

@@ -86,7 +86,13 @@ router.post("/", authorize(["admin", "user"]), createBlog);
  *         required: true
  *         description: The page number for pagination.
  *         schema:
- *           type: integer
+ *           type: string
+ *       - in: query
+ *         name: pageSize
+ *         required: true
+ *         description: The pageSize for pagination.
+ *         schema:
+ *           type: string
  *       - in: query
  *         name: title
  *         description: The title to search for.
